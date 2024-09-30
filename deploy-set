@@ -1,0 +1,52 @@
+#!/bin/bash
+# By: Alexis Xavier Aros [aaros@andreani.com]   V2
+#Script para ejecutar un comando PHP dentro de un contenedor con podman
+
+# Variables por defecto
+container=""          # Contenedor por defecto
+container_directory=""  # Directorio por defecto
+
+# Procesar opciones de línea de comandos
+while getopts n:c: flag
+do
+    case "$flag" in
+        n)  # Especificar el contenedor
+            container="$OPTARG"
+            ;;
+        c)  # Especificar el directorio dentro del contenedor
+            container_directory="$OPTARG"
+            ;;
+        *)  # Opción inválida
+            echo "Opción inválida: $flag"
+            exit 1
+            ;;
+    esac
+done
+
+# Shift para remover las opciones procesadas
+shift $((OPTIND - 1))
+
+# Verificar que se haya proporcionado un comando como argumento
+if [ -z "$1" ]; then
+    echo "Error: Debes proporcionar un comando PHP para ejecutar."
+    echo "Uso: $0 -n nombre_del_contenedor -c directorio_del_contenedor 'comando'"
+    exit 1
+fi
+
+# Construir el comando a ejecutar dentro del contenedor
+php_command="$1"
+command="cd $container_directory && $php_command"
+
+# Mostrar el comando para depuración
+echo "Ejecutando en el contenedor '$container': $command"
+
+# Ejecutar el comando dentro del contenedor
+podman exec "$container" sh -c "$command"
+
+# Comprobar si el comando anterior tuvo éxito
+if [ $? -ne 0 ]; then
+    echo "Error: El comando dentro del contenedor falló."
+    exit 1
+fi
+
+echo "Comando ejecutado exitosamente en el contenedor '$container'."
